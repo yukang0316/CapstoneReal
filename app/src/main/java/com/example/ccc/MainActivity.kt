@@ -1,12 +1,15 @@
 package com.example.ccc
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.ImageButton
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,18 +24,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         val reportButton: ImageButton = findViewById(R.id.report_btn)
-        reportButton.setOnClickListener {
-            // 새로운 액티비티로 이동
-            val intent = Intent(this, ReportingPage::class.java)
+        reportButton.setOnClickListener(View.OnClickListener {
+            val url = "https://jincoo.github.io/#/reporting" // 원하는 웹 페이지 URL로 변경
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             startActivity(intent)
-        }
+        })
 
         val ListButton: ImageButton = findViewById(R.id.reported_list_btn)
-        ListButton.setOnClickListener {
-            // 새로운 액티비티로 이동
-            val intent = Intent(this, ListOfReported::class.java)
+        ListButton.setOnClickListener(View.OnClickListener {
+            val url = "https://jincoo.github.io/#/list" // 원하는 웹 페이지 URL로 변경
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             startActivity(intent)
-        }
+        })
 
 
     }

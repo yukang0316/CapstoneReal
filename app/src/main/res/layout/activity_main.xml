@@ -5,23 +5,9 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#A0D468"
     tools:context=".MainActivity">
 
-
-    <ImageButton
-        android:id="@+id/more_btn"
-        android:layout_width="38dp"
-        android:layout_height="36dp"
-        android:background="@android:color/transparent"
-        android:padding="15px"
-        android:scaleType="centerCrop"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.991"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0"
-        app:srcCompat="@drawable/more_btn" />
 
     <ImageButton
         android:id="@+id/reported_list_btn"
@@ -66,26 +52,13 @@
         android:id="@+id/titleName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:fontFamily="@font/gmarket"
         android:text="잡았다 킥라니!"
-        android:textSize="34sp"
+        android:textSize="40sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.076" />
 
-    <ImageButton
-        android:id="@+id/option_btn"
-        android:layout_width="39dp"
-        android:layout_height="34dp"
-        android:background="@android:color/transparent"
-        android:padding="15px"
-        android:scaleType="centerCrop"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.86"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.002"
-        app:srcCompat="@drawable/option_btn" />
 </androidx.constraintlayout.widget.ConstraintLayout>
