@@ -1,5 +1,6 @@
 import os
 import datetime
+import cv2
 from flask import Flask, request, jsonify, render_template
 from PIL import Image, ExifTags
 from inference_sdk import InferenceHTTPClient
@@ -34,11 +35,31 @@ def detect():
 
     image = Image.open(temp_path)
     lat, lon = get_image_location(image)
+    img = cv2.imread(temp_path)
+    img = cv2.resize(img, (300,300))
     if not lat or not lon:
         os.remove(temp_path)
         return jsonify({'error': 'No location data available, cannot upload the photo.'}), 400
 
     result = CLIENT.infer(temp_path, model_id="dku-opensourceai-15-helmet/1")
+    print('result: ', result)
+
+    predictions = result['predictions']
+    for prediction in predictions:
+        x1 = int(prediction['x'])
+        y1 = int(prediction['y'])
+        x2 = int(prediction['width'])
+        y2 = int(prediction['height'])
+        
+        label = prediction['class']
+        conf = prediction['confidence']
+        text = str(conf)
+
+        cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 2)
+        cv2.putText(img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 2)
+        cv2.putText(img, text, (x1, y1 - 5), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 2)
+        cv2.imwrite(filename=filename, img=img)
+
     os.remove(temp_path)
 
     helmet_status = '미착용' if any(item['class'] == 'NoHelmet' or (item['class'] == 'Helmet' and item['confidence'] < 0.8) for item in result['predictions']) else '착용'
