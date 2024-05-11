@@ -1,22 +1,84 @@
-from flask import Flask, request, jsonify, redirect, url_for
-from PIL import Image
-import torch
-
-# YOLO 모델 로드
-model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+import os
+import datetime
+from flask import Flask, request, jsonify, render_template
+from PIL import Image, ExifTags
+from inference_sdk import InferenceHTTPClient
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
+CLIENT = InferenceHTTPClient(
+    api_url="https://detect.roboflow.com",
+    api_key="SC3i5IxjBihxekARxSUL"
+)
+
+IMAGE_FOLDER = 'location'
+os.makedirs(IMAGE_FOLDER, exist_ok=True)
+
 @app.route('/')
 def index():
-    return redirect(url_for('static', filename='index.html'))
+    return render_template('index.html')
 
 @app.route('/detect', methods=['POST'])
 def detect():
-    image = Image.open(request.files['file'].stream)  # 클라이언트에서 이미지 파일 받기
-    results = model(image)  # 이미지에서 객체 감지
-    results_data = results.pandas().xyxy[0].to_json(orient="records")  # 결과를 JSON 형식으로 변환
-    return jsonify(results_data)
+    file = request.files['file']
+    if not file:
+        return jsonify({'error': 'No file provided'}), 400
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    filename = secure_filename(f"{timestamp}_{file.filename}")
+    temp_dir = 'temp'
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_path = os.path.join(temp_dir, filename)
+    file.save(temp_path)
+
+    image = Image.open(temp_path)
+    lat, lon = get_image_location(image)
+    if not lat or not lon:
+        os.remove(temp_path)
+        return jsonify({'error': 'No location data available, cannot upload the photo.'}), 400
+
+    result = CLIENT.infer(temp_path, model_id="dku-opensourceai-15-helmet/1")
+    os.remove(temp_path)
+
+    helmet_status = '미착용' if any(item['class'] == 'NoHelmet' or (item['class'] == 'Helmet' and item['confidence'] < 0.8) for item in result['predictions']) else '착용'
+
+    if helmet_status == '미착용':
+        # Include location and timestamp in the saved filename
+        save_filename = f"{filename[:-4]}_lat{lat}_lon{lon}_time{timestamp}.jpg"
+        save_path = os.path.join(IMAGE_FOLDER, save_filename)
+        image.save(save_path)
+        return jsonify({'helmet_status': helmet_status})
+
+    return jsonify({'helmet_status': helmet_status})
+
+def get_image_location(image):
+    """Extract GPS coordinates from an image's EXIF data."""
+    exif_data = image._getexif()
+    if not exif_data:
+        return None, None
+
+    gps_info = exif_data.get(34853)
+    if not gps_info:
+        return None, None
+
+    def convert_to_degrees(value):
+        d, m, s = value
+        return d + (m / 60.0) + (s / 3600.0)
+
+    lat_ref = gps_info.get(1)
+    lon_ref = gps_info.get(3)
+    lat = gps_info.get(2)
+    lon = gps_info.get(4)
+    if lat and lon:
+        lat = convert_to_degrees(lat)
+        lon = convert_to_degrees(lon)
+        if lat_ref != 'N':
+            lat = -lat
+        if lon_ref != 'E':
+            lon = -lon
+        return lat, lon
+    return None, None
 
 if __name__ == '__main__':
     app.run(debug=True)
