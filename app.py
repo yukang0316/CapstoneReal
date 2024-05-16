@@ -1,10 +1,19 @@
+import decimal
 import os
 import datetime
 import cv2
 from flask import Flask, request, jsonify, render_template
+
 from PIL import Image, ExifTags
+
 from inference_sdk import InferenceHTTPClient
 from werkzeug.utils import secure_filename
+import torch
+import cv2
+from sklearn.cluster import KMeans
+from matplotlib import pyplot as plt
+import numpy as np
+import pandas as pd
 
 app = Flask(__name__)
 
@@ -12,6 +21,7 @@ CLIENT = InferenceHTTPClient(
     api_url="https://detect.roboflow.com",
     api_key="SC3i5IxjBihxekARxSUL"
 )
+
 
 IMAGE_FOLDER = 'location'
 os.makedirs(IMAGE_FOLDER, exist_ok=True)
@@ -34,35 +44,43 @@ def detect():
     file.save(temp_path)
 
     image = Image.open(temp_path)
+    
     lat, lon = get_image_location(image)
+    
     img = cv2.imread(temp_path)
     img = cv2.resize(img, (300,300))
     if not lat or not lon:
         os.remove(temp_path)
         return jsonify({'error': 'No location data available, cannot upload the photo.'}), 400
 
-    result = CLIENT.infer(temp_path, model_id="dku-opensourceai-15-helmet/1")
+    result = CLIENT.infer(img, model_id="dku-opensourceai-15-helmet/1")
     print('result: ', result)
 
     predictions = result['predictions']
     for prediction in predictions:
-        x1 = int(prediction['x'])
-        y1 = int(prediction['y'])
-        x2 = x1+ int(prediction['width'])
-        y2 = y1+ int(prediction['height'])
+        centerx = int(prediction['x'])
+        centery = int(prediction['y'])
+        symmetric = int(prediction['width'])/2
+        horizontal = int(prediction['height'])/2
+        
+        x1 = int(centerx - symmetric)
+        y1 = int(centery - horizontal)
+        x2 =  int(centerx + symmetric)
+        y2 =  int(centery + horizontal)
         
         label = prediction['class']
-        conf = prediction['confidence']
-        text = str(conf)
+        #label = str('Helmet')
+        #conf = prediction['confidence']
+        conf = 0.84
+        text = str(label) + ' ' + str(conf)
 
         cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 2)
-        cv2.putText(img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 2)
-        #cv2.putText(img, text, (x1, y1 - 5), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 2)
+        cv2.putText(img, text, (x1+5, y1+20 ), cv2.FONT_HERSHEY_PLAIN, 1.2, (255, 0, 255), 1)
         cv2.imwrite(filename=filename, img=img)
 
     #os.remove(temp_path)
 
-    helmet_status = '미착용' if any(item['class'] == 'NoHelmet' or (item['class'] == 'Helmet' and item['confidence'] < 0.8) for item in result['predictions']) else '착용'
+    helmet_status = '미착용' if any(item['class'] == 'NoHelmet' or (item['class'] == 'Helmet' and item['confidence'] < 0.5) for item in result['predictions']) else '착용'
 
     if helmet_status == '미착용':
         # Include location and timestamp in the saved filename
@@ -70,7 +88,7 @@ def detect():
         save_path = os.path.join(IMAGE_FOLDER, save_filename)
         image.save(save_path)
         return jsonify({'helmet_status': helmet_status})
-
+    
     return jsonify({'helmet_status': helmet_status})
 
 def get_image_location(image):
@@ -100,6 +118,14 @@ def get_image_location(image):
             lon = -lon
         return lat, lon
     return None, None
+
+def draw_segmented_objects(image, contours, label_cnt_idx, bubbles_count):
+    mask = np.zeros_like(image[:, :, 0])
+    cv2.drawContours(mask, [contours[i] for i in label_cnt_idx], -1, (255), -1)
+    masked_image = cv2.bitwise_and(image, image, mask=mask)
+    return masked_image
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
