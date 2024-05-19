@@ -13,13 +13,10 @@
         android:theme="@style/Theme.Ccc"
         tools:targetApi="31">
         <activity
-            android:name=".ListOfReported"
+            android:name=".SignUpActivity"
             android:exported="false" />
         <activity
-            android:name=".ReportingPage"
-            android:exported="false" />
-        <activity
-            android:name=".MainActivity"
+            android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,6 +24,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ReportedListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ReportingPageActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ListOfReported"
+            android:exported="false" />
+        <activity
+            android:name=".ReportingPage"
+            android:exported="false" />
     </application>
 
 </manifest>
