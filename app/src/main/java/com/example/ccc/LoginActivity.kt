@@ -39,7 +39,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun isValidCredentials(email: String, password: String): Boolean {
         // 서버에서 이메일과 비밀번호를 검증하는 코드 (가상)
-        return email == "user@example.com" && password == "password"
+        return email == "root" && password == "root"
     }
 
     private fun navigateToMainActivity() {
